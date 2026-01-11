@@ -225,6 +225,8 @@ module Ngworder
         opts.banner = "Usage: ngworder [--rule=NGWORDS.txt] <files...>"
         opts.on("--rule=PATH", "Rules file path (default: NGWORDS.txt)") { |value| options[:rule] = value }
         opts.on("--rg", "Use ripgrep for literal-only prefiltering") { options[:rg] = true }
+        opts.on("--[no-]line", "Print the entire line after each match") { |value| options[:line] = value }
+        opts.on("--color=MODE", "Colorize matches (auto, always, never)") { |value| options[:color] = value }
         opts.on("-h", "--help", "Show help") do
           puts opts
           return 0
@@ -246,6 +248,42 @@ module Ngworder
 
       rules = Parser.build_rules(rule_path)
       warn "No rules loaded from #{rule_path}" if rules.empty?
+
+      line_enabled = options.key?(:line) ? options[:line] : true
+
+      color_mode = (options[:color] || "auto").downcase
+      unless %w[auto always never].include?(color_mode)
+        warn "Invalid color mode: #{color_mode} (use auto, always, or never)"
+        return 2
+      end
+
+      color_enabled = case color_mode
+                      when "always"
+                        true
+                      when "never"
+                        false
+                      else
+                        $stdout.tty?
+                      end
+
+      colorize_match = lambda do |text|
+        return text unless color_enabled
+
+        "\e[35m#{text}\e[0m"
+      end
+
+      highlight_line = lambda do |line, span|
+        return line unless color_enabled
+
+        start_idx = span[0]
+        end_idx = span[1]
+        head = line[0, start_idx]
+        mid = line[start_idx, end_idx - start_idx]
+        tail = line[end_idx..-1]
+        return line if mid.nil?
+
+        "#{head}\e[35m#{mid}\e[0m#{tail}"
+      end
 
       found = false
 
@@ -284,7 +322,9 @@ module Ngworder
 
                 found = true
                 col_no = span[0] + 1
-                puts "#{path}:#{line_no}:#{col_no}  #{span[2]}  NG:#{rule.label}"
+                match_text = colorize_match.call(span[2])
+                puts "#{path}:#{line_no}:#{col_no}  #{match_text}  NG:#{rule.label}"
+                puts highlight_line.call(line, span) if line_enabled
               end
             end
           end
@@ -312,7 +352,9 @@ module Ngworder
 
               found = true
               col_no = span[0] + 1
-              puts "#{path}:#{line_no}:#{col_no}  #{span[2]}  NG:#{rule.label}"
+                match_text = colorize_match.call(span[2])
+                puts "#{path}:#{line_no}:#{col_no}  #{match_text}  NG:#{rule.label}"
+                puts highlight_line.call(line, span) if line_enabled
             end
           end
 
@@ -329,7 +371,9 @@ module Ngworder
 
               found = true
               col_no = span[0] + 1
-              puts "#{path}:#{line_no}:#{col_no}  #{span[2]}  NG:#{rule.label}"
+                match_text = colorize_match.call(span[2])
+                puts "#{path}:#{line_no}:#{col_no}  #{match_text}  NG:#{rule.label}"
+                puts highlight_line.call(line, span) if line_enabled
             end
           end
         end

@@ -12,6 +12,8 @@ gem install ngworder
 ngworder target.md
 ngworder --rule=NGWORDS.txt target.md
 ngworder --rg target.md
+ngworder --no-line target.md
+ngworder --color=auto target.md
 ngworder --help
 ```
 
