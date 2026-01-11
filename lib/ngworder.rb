@@ -5,17 +5,18 @@ require "tempfile"
 require_relative "ngworder/version"
 
 module Ngworder
-  Rule = Struct.new(:matcher, :label, :excludes)
+  Rule = Struct.new(:matcher, :label, :excludes, :comment)
   Matcher = Struct.new(:type, :pattern, :label)
 
   module Parser
     module_function
 
-    def strip_comment(line)
+    def split_comment(line)
       out = +""
       escaped = false
+      comment = nil
 
-      line.each_char do |ch|
+      line.each_char.with_index do |ch, idx|
         if escaped
           out << ch
           escaped = false
@@ -28,12 +29,15 @@ module Ngworder
           next
         end
 
-        break if ch == "#"
+        if ch == "#"
+          comment = line[(idx + 1)..-1]
+          break
+        end
 
         out << ch
       end
 
-      out
+      [out, comment]
     end
 
     def split_unescaped_bang(line)
@@ -127,7 +131,7 @@ module Ngworder
       rules = []
 
       File.readlines(path, chomp: true).each do |line|
-        content = strip_comment(line)
+        content, comment = split_comment(line)
         next if content.strip.empty?
 
         parts = split_unescaped_bang(content)
@@ -135,7 +139,9 @@ module Ngworder
         next unless base
 
         excludes = parts.map { |part| parse_matcher(part, trim: :both) }.compact
-        rules << Rule.new(base, base.label, excludes)
+        comment = comment&.strip
+        comment = nil if comment.nil? || comment.empty?
+        rules << Rule.new(base, base.label, excludes, comment)
       end
 
       rules
@@ -272,6 +278,12 @@ module Ngworder
         "\e[35m#{text}\e[0m"
       end
 
+      colorize_path = lambda do |text|
+        return text unless color_enabled
+
+        "\e[36m#{text}\e[0m"
+      end
+
       highlight_line = lambda do |line, span|
         return line unless color_enabled
 
@@ -323,7 +335,9 @@ module Ngworder
                 found = true
                 col_no = span[0] + 1
                 match_text = colorize_match.call(span[2])
-                puts "#{path}:#{line_no}:#{col_no}  #{match_text}  NG:#{rule.label}"
+                suffix = rule.comment ? "  # #{rule.comment}" : ""
+                path_text = colorize_path.call(path)
+                puts "#{path_text}:#{line_no}:#{col_no}  #{match_text}#{suffix}"
                 puts highlight_line.call(line, span) if line_enabled
               end
             end
@@ -353,7 +367,9 @@ module Ngworder
               found = true
               col_no = span[0] + 1
                 match_text = colorize_match.call(span[2])
-                puts "#{path}:#{line_no}:#{col_no}  #{match_text}  NG:#{rule.label}"
+                suffix = rule.comment ? "  # #{rule.comment}" : ""
+                path_text = colorize_path.call(path)
+                puts "#{path_text}:#{line_no}:#{col_no}  #{match_text}#{suffix}"
                 puts highlight_line.call(line, span) if line_enabled
             end
           end
@@ -372,7 +388,9 @@ module Ngworder
               found = true
               col_no = span[0] + 1
                 match_text = colorize_match.call(span[2])
-                puts "#{path}:#{line_no}:#{col_no}  #{match_text}  NG:#{rule.label}"
+                suffix = rule.comment ? "  # #{rule.comment}" : ""
+                path_text = colorize_path.call(path)
+                puts "#{path_text}:#{line_no}:#{col_no}  #{match_text}#{suffix}"
                 puts highlight_line.call(line, span) if line_enabled
             end
           end

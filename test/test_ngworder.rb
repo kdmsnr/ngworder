@@ -31,21 +31,21 @@ class NgworderTest < Minitest::Test
 
     lines = out.lines
     assert_equal 2, lines.length
-    assert_match(/#{Regexp.escape(path)}:1:\d+\s+ユーザ\s+NG:ユーザ/, lines.first)
+    assert_match(/#{Regexp.escape(path)}:1:\d+\s+ユーザ/, lines.first)
     assert_equal 1, code
   end
 
   def test_regex_match
     code, out, _err, path = run_cli("/ab+c/\n", "abbbc\n")
 
-    assert_match(/#{Regexp.escape(path)}:1:1\s+abbbc\s+NG:\/ab\+c\//, out)
+    assert_match(/#{Regexp.escape(path)}:1:1\s+abbbc/, out)
     assert_equal 1, code
   end
 
   def test_escape_hash_literal
     code, out, _err, path = run_cli("\\#タグ\n", "#タグ\n")
 
-    assert_match(/#{Regexp.escape(path)}:1:1\s+#タグ\s+NG:\\#タグ/, out)
+    assert_match(/#{Regexp.escape(path)}:1:1\s+#タグ/, out)
     assert_equal 1, code
   end
 
@@ -54,21 +54,21 @@ class NgworderTest < Minitest::Test
 
     lines = out.lines
     assert_equal 2, lines.length
-    assert_match(/#{Regexp.escape(path)}:1:\d+\s+foo\s+NG:foo/, lines.first)
+    assert_match(/#{Regexp.escape(path)}:1:\d+\s+foo/, lines.first)
     assert_equal 1, code
   end
 
   def test_leading_space_literal
     code, out, _err, path = run_cli(" 。\n", " 。\n")
 
-    assert_match(/#{Regexp.escape(path)}:1:1\s+ 。\s+NG: 。/, out)
+    assert_match(/#{Regexp.escape(path)}:1:1\s+ 。/, out)
     assert_equal 1, code
   end
 
   def test_trailing_space_before_comment_is_ignored
     code, out, _err, path = run_cli(" 。 # 不要なスペース\n", " 。\n")
 
-    assert_match(/#{Regexp.escape(path)}:1:1\s+ 。\s+NG: 。/, out)
+    assert_match(/#{Regexp.escape(path)}:1:1\s+ 。\s+# 不要なスペース/, out)
     assert_equal 1, code
   end
 
@@ -88,7 +88,7 @@ class NgworderTest < Minitest::Test
 
     lines = out.lines.map(&:chomp)
     assert_equal 2, lines.length
-    assert_match(/#{Regexp.escape(input_file.path)}:1:1\s+foo\s+NG:foo/, lines[0])
+    assert_match(/#{Regexp.escape(input_file.path)}:1:1\s+foo/, lines[0])
     assert_equal "foo bar", lines[1]
     assert_equal 1, code
   ensure
@@ -112,11 +112,18 @@ class NgworderTest < Minitest::Test
 
     lines = out.lines.map(&:chomp)
     assert_equal 1, lines.length
-    assert_match(/#{Regexp.escape(input_file.path)}:1:1\s+foo\s+NG:foo/, lines[0])
+    assert_match(/#{Regexp.escape(input_file.path)}:1:1\s+foo/, lines[0])
     assert_equal 1, code
   ensure
     rules_file.close!
     input_file.close!
+  end
+
+  def test_comment_output
+    code, out, _err, path = run_cli("foo # note\n", "foo\n")
+
+    assert_match(/#{Regexp.escape(path)}:1:1\s+foo\s+# note/, out)
+    assert_equal 1, code
   end
 
   def test_color_always
@@ -133,6 +140,7 @@ class NgworderTest < Minitest::Test
       code = Ngworder::CLI.run(["--rule=#{rules_file.path}", "--color=always", input_file.path])
     end
 
+    assert_includes out, "\e[36m#{input_file.path}\e[0m"
     assert_includes out, "\e[35mfoo\e[0m"
     assert_equal 1, code
   ensure

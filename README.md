@@ -38,7 +38,7 @@ Example:
 
 ## Output
 ```
-path/to/file:line:col  match  NG:<rule>
+path/to/file:line:col  match  # comment
 ```
 
 ## Performance
