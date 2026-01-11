@@ -4,8 +4,7 @@ Simple CLI to extract NG words from Japanese text using a plain text rules file.
 
 ## Install
 ```
-gem build ngworder.gemspec
-gem install ./ngworder-0.1.0.gem
+gem install ngworder
 ```
 
 ## Usage
