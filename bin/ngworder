@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+begin
+  require "ngworder"
+rescue LoadError
+  require_relative "../lib/ngworder"
+end
+
+exit Ngworder::CLI.run(ARGV)
