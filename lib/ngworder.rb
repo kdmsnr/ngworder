@@ -100,8 +100,15 @@ module Ngworder
       backslashes.even?
     end
 
-    def parse_matcher(raw)
-      trimmed = raw.strip
+    def parse_matcher(raw, trim: :both)
+      trimmed = case trim
+                when :right
+                  raw.rstrip
+                when :none
+                  raw
+                else
+                  raw.strip
+                end
       return nil if trimmed.empty?
 
       if trimmed.start_with?("/") && trimmed.length >= 2 && trimmed.end_with?("/")
@@ -120,14 +127,14 @@ module Ngworder
       rules = []
 
       File.readlines(path, chomp: true).each do |line|
-        content = strip_comment(line).strip
-        next if content.empty?
+        content = strip_comment(line)
+        next if content.strip.empty?
 
         parts = split_unescaped_bang(content)
-        base = parse_matcher(parts.shift || "")
+        base = parse_matcher(parts.shift || "", trim: :right)
         next unless base
 
-        excludes = parts.map { |part| parse_matcher(part) }.compact
+        excludes = parts.map { |part| parse_matcher(part, trim: :both) }.compact
         rules << Rule.new(base, base.label, excludes)
       end
 

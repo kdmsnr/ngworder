@@ -57,4 +57,18 @@ class NgworderTest < Minitest::Test
     assert_match(/#{Regexp.escape(path)}:1:\d+\s+foo\s+NG:foo/, lines.first)
     assert_equal 1, code
   end
+
+  def test_leading_space_literal
+    code, out, _err, path = run_cli(" 。\n", " 。\n")
+
+    assert_match(/#{Regexp.escape(path)}:1:1\s+ 。\s+NG: 。/, out)
+    assert_equal 1, code
+  end
+
+  def test_trailing_space_before_comment_is_ignored
+    code, out, _err, path = run_cli(" 。 # 不要なスペース\n", " 。\n")
+
+    assert_match(/#{Regexp.escape(path)}:1:1\s+ 。\s+NG: 。/, out)
+    assert_equal 1, code
+  end
 end
