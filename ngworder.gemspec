@@ -7,6 +7,7 @@ Gem::Specification.new do |spec|
   spec.version = Ngworder::VERSION
   spec.summary = "Extract NG words from Japanese text using simple rule files"
   spec.description = "CLI tool to scan files for NG words with per-rule exclusions."
+  spec.homepage = "https://github.com/kdmsnr/ngworder"
   spec.authors = ["Masanori Kado"]
   spec.email = ["kdmsnr@gmail.com"]
   spec.license = "MIT"
