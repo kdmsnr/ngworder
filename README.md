@@ -8,6 +8,7 @@ gem install ngworder
 ```
 
 ## Usage
+Run the CLI with one or more target files. By default it loads `NGWORDS.txt` from the current directory, prints each match and the full line, and colorizes output only when stdout is a TTY. Use `--rule=PATH` to point to another rules file, `--rg` to speed up literal rules with ripgrep, `--no-line` to suppress the full line output, and `--color=auto|always|never` to control color output.
 ```
 ngworder target.md
 ngworder --rule=NGWORDS.txt target.md
